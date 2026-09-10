@@ -174,35 +174,39 @@ class NextExperienceView(APIView):
         )
 
 
-class ProgressView(APIView):
-    def get(self, request, session_key):
+class JourneyProgressView(APIView):
+    def get(self, request, slug, session_key):
+        journey = Journey.objects.filter(
+            slug=slug,
+            is_published=True,
+        ).first()
+
+        if not journey:
+            return Response(
+                {"detail": "Journey not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         progress, _ = UserProgress.objects.get_or_create(
             session_key=session_key
         )
 
-        journey = Journey.objects.filter(
-            is_published=True
-        ).order_by("id").first()
+        completed_ids = AnswerAttempt.objects.filter(
+            progress=progress,
+            experience__journey=journey,
+            is_correct=True,
+        ).values_list("experience_id", flat=True)
 
-        next_experience = None
-
-        if journey:
-            completed_ids = AnswerAttempt.objects.filter(
-                progress=progress,
-                experience__journey=journey,
-                is_correct=True,
-            ).values_list("experience_id", flat=True)
-
-            next_experience = (
-                Experience.objects
-                .filter(
-                    journey=journey,
-                    is_published=True,
-                )
-                .exclude(id__in=completed_ids)
-                .order_by("order")
-                .first()
+        next_experience = (
+            Experience.objects
+            .filter(
+                journey=journey,
+                is_published=True,
             )
+            .exclude(id__in=completed_ids)
+            .order_by("order")
+            .first()
+        )
 
         if next_experience:
             serializer = ExperienceSerializer(next_experience)

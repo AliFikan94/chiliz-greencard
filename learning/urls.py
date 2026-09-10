@@ -6,7 +6,7 @@ from .views import (
     ExperienceDetailView,
     SubmitAnswerView,
     NextExperienceView,
-    ProgressView,
+    JourneyProgressView,
 )
 
 urlpatterns = [
@@ -41,8 +41,8 @@ urlpatterns = [
     ),
 
     path(
-        "progress/<str:session_key>/",
-        ProgressView.as_view(),
-        name="progress",
+        "<slug:slug>/progress/<str:session_key>/",
+        JourneyProgressView.as_view(),
+        name="journey-progress",
     ),
 ]
