@@ -3,6 +3,8 @@ victor/
 __pycache__/
 *.py[cod]
 *.pyo
+.venv/
+venv/
 
 # Django
 db.sqlite3

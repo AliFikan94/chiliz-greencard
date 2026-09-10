@@ -63,6 +63,7 @@ class Choice(models.Model):
 
 class UserProgress(models.Model):
     session_key = models.CharField(max_length=64, unique=True)
+    wallet_address = models.CharField(max_length=42, blank=True, null=True)
     xp = models.PositiveIntegerField(default=0)
     completed_experiences = models.PositiveIntegerField(default=0)
 

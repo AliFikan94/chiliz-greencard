@@ -10,10 +10,15 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
+
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
@@ -140,3 +145,21 @@ MAILERS = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
+
+
+# Onchain rewards (Chiliz Chain)
+# https://docs.chiliz.com
+
+# Private key of the backend's voucher-signing wallet. Only ever signs EIP-712
+# vouchers — it never holds or moves funds, so a leak only lets someone forge
+# reward eligibility (mitigated by rotating RewardDistributor.signer), not
+# steal treasury funds.
+REWARD_SIGNER_PRIVATE_KEY = os.environ.get("REWARD_SIGNER_PRIVATE_KEY", "")
+
+REWARD_DISTRIBUTOR_ADDRESS = os.environ.get("REWARD_DISTRIBUTOR_ADDRESS", "")
+
+# 88882 = Chiliz Spicy testnet, 88888 = Chiliz mainnet.
+CHILIZ_CHAIN_ID = int(os.environ.get("CHILIZ_CHAIN_ID", "88882"))
+
+# How long an issued voucher remains claimable before it expires.
+REWARD_VOUCHER_TTL_SECONDS = int(os.environ.get("REWARD_VOUCHER_TTL_SECONDS", str(15 * 60)))
