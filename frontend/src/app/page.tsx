@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 
+import { ClaimRewardButton } from "@/components/ClaimRewardButton";
+import { ConnectWalletButton } from "@/components/ConnectWalletButton";
+import { requestExperienceVoucher, requestJourneyVoucher } from "@/lib/rewardApi";
+
 type Choice = {
   id: number;
   text: string;
@@ -21,6 +25,7 @@ type Experience = {
 };
 
 type Journey = {
+  slug: string;
   title: string;
   description: string;
   experiences: Experience[];
@@ -50,8 +55,19 @@ export default function Home() {
   const [completedExperiences, setCompletedExperiences] = useState(0);
 
   const [journeyComplete, setJourneyComplete] = useState(false);
+  const [sessionKey, setSessionKey] = useState<string | null>(null);
 
   useEffect(() => {
+    let key = localStorage.getItem("greencard_session");
+    if (!key) {
+      key = crypto.randomUUID();
+      localStorage.setItem("greencard_session", key);
+    }
+    // localStorage only exists client-side, so reading it (and thus knowing
+    // the session key) can only happen after mount, not during render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSessionKey(key);
+
     async function initialize() {
       await loadJourney();
       await loadProgress();
@@ -127,19 +143,12 @@ export default function Home() {
   }
 
   async function submitAnswer(choiceId: number) {
-    if (!experience || submitting || answer) return;
+    if (!experience || submitting || answer || !sessionKey) return;
 
     setSelectedChoice(choiceId);
     setSubmitting(true);
 
     try {
-      let sessionKey = localStorage.getItem("greencard_session");
-
-      if (!sessionKey) {
-        sessionKey = crypto.randomUUID();
-        localStorage.setItem("greencard_session", sessionKey);
-      }
-
       const response = await fetch(
         `${API}/experience/${experience.id}/answer/`,
         {
@@ -217,13 +226,16 @@ export default function Home() {
     return (
       <main className="min-h-screen bg-[#f5f5f0] text-[#111]">
         <div className="mx-auto flex min-h-screen max-w-4xl flex-col px-6 py-8 md:px-10">
-          <header className="flex items-center justify-between">
+          <header className="flex items-center justify-between gap-4">
             <div className="text-xs font-semibold tracking-[0.2em]">
               CHILIZ GREENCARD
             </div>
 
-            <div className="rounded-full bg-white px-4 py-2 text-sm font-medium shadow-sm">
-              {totalXp} XP
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-white px-4 py-2 text-sm font-medium shadow-sm">
+                {totalXp} XP
+              </div>
+              <ConnectWalletButton sessionKey={sessionKey} />
             </div>
           </header>
 
@@ -255,6 +267,15 @@ export default function Home() {
               </p>
             </div>
 
+            {sessionKey && journey && (
+              <div className="mt-8">
+                <ClaimRewardButton
+                  label="achievement badge"
+                  requestVoucher={() => requestJourneyVoucher(sessionKey, journey.slug)}
+                />
+              </div>
+            )}
+
             <button
               onClick={resetJourney}
               className="mt-8 rounded-full border border-black px-7 py-4 text-sm font-semibold transition hover:bg-black hover:text-white"
@@ -280,13 +301,16 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#f5f5f0] text-[#111]">
       <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-6 py-6 md:px-10 md:py-8">
-        <header className="flex items-center justify-between">
+        <header className="flex items-center justify-between gap-4">
           <div className="text-xs font-semibold tracking-[0.2em]">
             CHILIZ GREENCARD
           </div>
 
-          <div className="rounded-full bg-white px-4 py-2 text-sm font-medium shadow-sm">
-            {totalXp} XP
+          <div className="flex items-center gap-3">
+            <div className="rounded-full bg-white px-4 py-2 text-sm font-medium shadow-sm">
+              {totalXp} XP
+            </div>
+            <ConnectWalletButton sessionKey={sessionKey} />
           </div>
         </header>
 
@@ -385,6 +409,15 @@ export default function Home() {
                   {answer.reveal}
                 </p>
               </div>
+
+              {answer.correct && sessionKey && (
+                <div className="mb-8">
+                  <ClaimRewardButton
+                    label="LEARN reward"
+                    requestVoucher={() => requestExperienceVoucher(sessionKey, experience.id)}
+                  />
+                </div>
+              )}
 
               <button
                 onClick={nextExperience}
