@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 
-import { ChiliMascot } from "./ChiliMascot";
+import { GraduationCapIcon } from "./GraduationCapIcon";
 
 function shortenAddress(address: string) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -67,10 +67,10 @@ export function GreencardNFT({
                 Chiliz Web3 Academy
               </p>
               <h3 className="mt-1 text-xl font-bold tracking-tight text-white sm:text-2xl">
-                CHILIZEN <span className="text-chiliz-red">GREENCARD</span>
+                CHILIZEN <span className="text-success">GREENCARD</span>
               </h3>
             </div>
-            <ChiliMascot className="h-9 w-9 shrink-0" />
+            <GraduationCapIcon className="h-9 w-9 shrink-0 text-white" />
           </div>
 
           <div>
