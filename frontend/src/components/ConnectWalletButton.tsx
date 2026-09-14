@@ -14,7 +14,9 @@ export function ConnectWalletButton({ sessionKey }: { sessionKey: string | null 
   const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
   const [bindError, setBindError] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const boundFor = useRef<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!address || !sessionKey || boundFor.current === address) return;
@@ -26,6 +28,17 @@ export function ConnectWalletButton({ sessionKey }: { sessionKey: string | null 
       })
       .catch((error) => setBindError(error.message));
   }, [address, sessionKey]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClickAway(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickAway);
+    return () => document.removeEventListener("mousedown", handleClickAway);
+  }, [menuOpen]);
 
   if (isConnected && address) {
     return (
@@ -44,15 +57,56 @@ export function ConnectWalletButton({ sessionKey }: { sessionKey: string | null 
     );
   }
 
-  const injectedConnector = connectors.find((c) => c.type === "injected") ?? connectors[0];
+  const injectedConnector = connectors.find((c) => c.type === "injected");
+  const walletConnectConnector = connectors.find((c) => c.type === "walletConnect");
+
+  // No WalletConnect project ID configured - only the browser-extension
+  // wallet (MetaMask, etc.) is available, so skip the menu entirely.
+  if (!walletConnectConnector) {
+    return (
+      <button
+        onClick={() => injectedConnector && connect({ connector: injectedConnector })}
+        disabled={!injectedConnector || isPending}
+        className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-background transition hover:opacity-85 disabled:opacity-50"
+      >
+        {isPending ? "Connecting..." : "Connect wallet"}
+      </button>
+    );
+  }
 
   return (
-    <button
-      onClick={() => injectedConnector && connect({ connector: injectedConnector })}
-      disabled={!injectedConnector || isPending}
-      className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-background transition hover:opacity-85 disabled:opacity-50"
-    >
-      {isPending ? "Connecting..." : "Connect wallet"}
-    </button>
+    <div className="relative" ref={menuRef}>
+      <button
+        onClick={() => setMenuOpen((open) => !open)}
+        disabled={isPending}
+        className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-background transition hover:opacity-85 disabled:opacity-50"
+      >
+        {isPending ? "Connecting..." : "Connect wallet"}
+      </button>
+
+      {menuOpen && (
+        <div className="absolute right-0 top-full z-10 mt-2 w-48 overflow-hidden rounded-2xl border border-card-border bg-card shadow-lg">
+          <button
+            onClick={() => {
+              setMenuOpen(false);
+              if (injectedConnector) connect({ connector: injectedConnector });
+            }}
+            disabled={!injectedConnector}
+            className="block w-full px-4 py-3 text-left text-sm font-medium text-foreground transition hover:bg-background disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            MetaMask
+          </button>
+          <button
+            onClick={() => {
+              setMenuOpen(false);
+              connect({ connector: walletConnectConnector });
+            }}
+            className="block w-full border-t border-card-border px-4 py-3 text-left text-sm font-medium text-foreground transition hover:bg-background"
+          >
+            Socios Wallet
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

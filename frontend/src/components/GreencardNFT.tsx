@@ -47,18 +47,18 @@ export function GreencardNFT({
           transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`,
           transformStyle: "preserve-3d",
         }}
-        className="relative aspect-[1.6/1] w-full max-w-md overflow-hidden rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-950 via-black to-zinc-900 p-6 shadow-[0_20px_60px_-15px_rgba(255,23,68,0.25)] transition-transform duration-150 ease-out"
+        className="relative aspect-[1.6/1] w-full max-w-md overflow-hidden rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-950 via-black to-zinc-900 p-6 shadow-[0_20px_60px_-15px_rgba(34,197,94,0.3)] transition-transform duration-150 ease-out"
       >
         {/* Lightweight guilloche-style accents - pure CSS, no image assets. */}
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.15]"
           style={{
             backgroundImage:
-              "repeating-radial-gradient(circle at 15% 20%, transparent 0px, transparent 3px, var(--chiliz-red) 4px, transparent 5px)",
+              "repeating-radial-gradient(circle at 15% 20%, transparent 0px, transparent 3px, #22c55e 4px, transparent 5px)",
             backgroundSize: "22px 22px",
           }}
         />
-        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-chiliz-red via-red-700 to-chiliz-red" />
+        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-success/50 via-success to-success/50" />
 
         <div className="relative flex h-full flex-col justify-between">
           <div className="flex items-start justify-between">
@@ -80,7 +80,7 @@ export function GreencardNFT({
                 <span
                   key={i}
                   className={`h-1.5 flex-1 rounded-full ${
-                    i < coursesPassed ? "bg-chiliz-red" : "bg-zinc-800"
+                    i < coursesPassed ? "bg-success" : "bg-zinc-800"
                   }`}
                 />
               ))}
