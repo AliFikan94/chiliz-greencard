@@ -4,9 +4,9 @@ import Link from "next/link";
 import { useAccount } from "wagmi";
 import { useEffect, useState } from "react";
 
-import { ChiliMascot } from "@/components/ChiliMascot";
 import { ClaimRewardButton } from "@/components/ClaimRewardButton";
 import { ConnectWalletButton } from "@/components/ConnectWalletButton";
+import { GraduationCapIcon } from "@/components/GraduationCapIcon";
 import { GreencardNFT } from "@/components/GreencardNFT";
 import { ShareButtons } from "@/components/ShareButtons";
 import { StreakBadge } from "@/components/StreakBadge";
@@ -96,7 +96,7 @@ export default function Home() {
       <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-6 py-6 md:px-10 md:py-8">
         <header className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <ChiliMascot className="h-8 w-8" />
+            <GraduationCapIcon className="h-8 w-8" />
             <span className="text-xs font-semibold tracking-[0.2em]">CHILIZ ACADEMY</span>
           </div>
           <div className="flex items-center gap-3">
@@ -110,7 +110,7 @@ export default function Home() {
           <h1 className="max-w-2xl text-4xl font-semibold leading-[1.05] tracking-[-0.04em] md:text-6xl">
             Learn crypto.
             <br />
-            Earn your <span className="text-chiliz-red">Greencard</span>.
+            Earn your <span className="text-success">Greencard</span>.
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-8 text-muted">
             7 bite-sized courses on Chiliz, Fan Tokens, and Web3. Pass every

@@ -6,6 +6,7 @@ import { use, useEffect, useState } from "react";
 import { ChiliMascot } from "@/components/ChiliMascot";
 import { ClaimRewardButton } from "@/components/ClaimRewardButton";
 import { ConnectWalletButton } from "@/components/ConnectWalletButton";
+import { GraduationCapIcon } from "@/components/GraduationCapIcon";
 import { ShareButtons } from "@/components/ShareButtons";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { startCourse, submitAnswer } from "@/lib/learningApi";
@@ -119,7 +120,7 @@ export default function JourneyPage(props: PageProps<"/journey/[slug]">) {
       <div className="mx-auto flex min-h-screen max-w-3xl flex-col px-6 py-6 md:px-10 md:py-8">
         <header className="flex items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2">
-            <ChiliMascot className="h-7 w-7" />
+            <GraduationCapIcon className="h-7 w-7" />
             <span className="text-xs font-semibold tracking-[0.2em]">CHILIZ ACADEMY</span>
           </Link>
           <div className="flex items-center gap-3">
