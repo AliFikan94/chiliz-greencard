@@ -1,15 +1,69 @@
 "use client";
 
 import Link from "next/link";
+import { useAccount } from "wagmi";
 import { useEffect, useState } from "react";
 
+import { ChiliMascot } from "@/components/ChiliMascot";
+import { ClaimRewardButton } from "@/components/ClaimRewardButton";
 import { ConnectWalletButton } from "@/components/ConnectWalletButton";
-import { LEARNING_API } from "@/lib/learningApi";
-import { Journey } from "@/lib/types";
+import { GreencardNFT } from "@/components/GreencardNFT";
+import { ShareButtons } from "@/components/ShareButtons";
+import { StreakBadge } from "@/components/StreakBadge";
+import { fetchCourses } from "@/lib/learningApi";
+import { fetchGreencardStatus, requestGreencardVoucher, GreencardStatus } from "@/lib/rewardApi";
+import { CourseSummary } from "@/lib/types";
+
+function CourseCard({ course }: { course: CourseSummary }) {
+  const base =
+    "hover-card relative flex flex-col justify-between rounded-2xl p-5 min-h-[150px]";
+
+  const inner = (
+    <>
+      <div>
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-zinc-500">
+            Course {course.order}
+          </span>
+          {course.passed && (
+            <span className="rounded-full bg-chiliz-lime/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-chiliz-lime">
+              Passed
+            </span>
+          )}
+          {course.locked && (
+            <svg viewBox="0 0 24 24" className="h-4 w-4 text-zinc-600" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="5" y="11" width="14" height="9" rx="2" />
+              <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+            </svg>
+          )}
+        </div>
+        <h2 className="mt-2 text-lg font-semibold tracking-tight text-white">{course.title}</h2>
+        <p className="mt-1 text-sm leading-6 text-zinc-400">{course.description}</p>
+      </div>
+      <p className="mt-4 text-xs font-medium text-zinc-500">
+        {course.question_count} questions ·{" "}
+        {course.locked ? "Locked" : course.passed ? "Replay" : "Start"}{" "}
+        <span className="text-zinc-700">→</span>
+      </p>
+    </>
+  );
+
+  if (course.locked) {
+    return <div className={`${base} cursor-not-allowed opacity-50`}>{inner}</div>;
+  }
+
+  return (
+    <Link href={`/journey/${course.slug}`} className={base}>
+      {inner}
+    </Link>
+  );
+}
 
 export default function Home() {
-  const [journeys, setJourneys] = useState<Journey[] | null>(null);
+  const { address } = useAccount();
   const [sessionKey, setSessionKey] = useState<string | null>(null);
+  const [courses, setCourses] = useState<CourseSummary[] | null>(null);
+  const [greencard, setGreencard] = useState<GreencardStatus | null>(null);
 
   useEffect(() => {
     let key = localStorage.getItem("greencard_session");
@@ -21,71 +75,91 @@ export default function Home() {
     // the session key) can only happen after mount, not during render.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSessionKey(key);
-
-    async function loadJourneys() {
-      try {
-        const response = await fetch(`${LEARNING_API}/`, { cache: "no-store" });
-        if (!response.ok) throw new Error("Failed to load journeys");
-        setJourneys(await response.json());
-      } catch (error) {
-        console.error(error);
-        setJourneys([]);
-      }
-    }
-
-    loadJourneys();
   }, []);
 
+  useEffect(() => {
+    if (!sessionKey) return;
+
+    fetchCourses(sessionKey)
+      .then(setCourses)
+      .catch(() => setCourses([]));
+
+    fetchGreencardStatus(sessionKey)
+      .then(setGreencard)
+      .catch(() => {});
+  }, [sessionKey]);
+
+  const shareText = "I just unlocked my Chiliz Greencard on Chiliz Academy! 🌶️";
+
   return (
-    <main className="min-h-screen bg-[#f5f5f0] text-[#111]">
+    <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-6 py-6 md:px-10 md:py-8">
         <header className="flex items-center justify-between gap-4">
-          <div className="text-xs font-semibold tracking-[0.2em]">
-            CHILIZ GREENCARD
+          <div className="flex items-center gap-2">
+            <ChiliMascot className="h-8 w-8" />
+            <span className="text-xs font-semibold tracking-[0.2em] text-zinc-300">
+              CHILIZ ACADEMY
+            </span>
           </div>
-          <ConnectWalletButton sessionKey={sessionKey} />
+          <div className="flex items-center gap-3">
+            <StreakBadge />
+            <ConnectWalletButton sessionKey={sessionKey} />
+          </div>
         </header>
 
-        <section className="py-16">
-          <h1 className="max-w-3xl text-4xl font-semibold leading-[1.02] tracking-[-0.045em] md:text-6xl">
-            Learn crypto. Earn onchain.
+        <section className="py-14">
+          <h1 className="max-w-2xl text-4xl font-semibold leading-[1.05] tracking-[-0.04em] text-white md:text-6xl">
+            Learn crypto.
+            <br />
+            Earn your <span className="text-chiliz-red">Greencard</span>.
           </h1>
-          <p className="mt-6 max-w-xl text-lg leading-8 text-neutral-600">
-            Bite-sized journeys into crypto and the Chiliz ecosystem. Answer
-            correctly, earn XP, and claim real onchain rewards on Chiliz
-            Chain.
+          <p className="mt-6 max-w-xl text-lg leading-8 text-zinc-400">
+            7 bite-sized courses on Chiliz, Fan Tokens, and Web3. Pass every
+            course with a 100% score to unlock your onchain Chiliz Greencard.
           </p>
+        </section>
 
-          {journeys === null && (
-            <p className="mt-14 text-sm text-neutral-500">Loading journeys...</p>
+        <section className="pb-14">
+          <div className="flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
+            <GreencardNFT
+              walletAddress={address ?? null}
+              coursesPassed={greencard?.courses_passed ?? 0}
+              totalCourses={greencard?.total_courses ?? 7}
+              unlocked={!!greencard?.voucher}
+            />
+
+            <div className="flex flex-col gap-4">
+              {greencard?.eligible && !greencard.voucher && sessionKey && (
+                <ClaimRewardButton
+                  label="your Chiliz Greencard"
+                  requestVoucher={() => requestGreencardVoucher(sessionKey)}
+                />
+              )}
+              {greencard?.voucher && <ShareButtons text={shareText} />}
+              {!greencard?.eligible && (
+                <p className="max-w-xs text-sm text-zinc-500">
+                  {greencard
+                    ? `${greencard.courses_passed}/${greencard.total_courses} courses passed - keep going to unlock your Greencard.`
+                    : "Connect a wallet and start course 1 to begin."}
+                </p>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="pb-16">
+          <h2 className="mb-5 text-xs font-semibold uppercase tracking-[0.25em] text-zinc-500">
+            Core curriculum
+          </h2>
+
+          {courses === null && <p className="text-sm text-zinc-500">Loading courses...</p>}
+          {courses && courses.length === 0 && (
+            <p className="text-sm text-zinc-500">No courses published yet. Check back soon.</p>
           )}
 
-          {journeys && journeys.length === 0 && (
-            <p className="mt-14 text-sm text-neutral-500">
-              No journeys published yet. Check back soon.
-            </p>
-          )}
-
-          <div className="mt-14 grid gap-4 sm:grid-cols-2">
-            {journeys?.map((journey) => (
-              <Link
-                key={journey.slug}
-                href={`/journey/${journey.slug}`}
-                className="group rounded-3xl border border-neutral-200 bg-white p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-black hover:shadow-md"
-              >
-                <h2 className="text-xl font-semibold tracking-tight">
-                  {journey.title}
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-neutral-600">
-                  {journey.description}
-                </p>
-                <p className="mt-4 text-sm font-medium">
-                  {journey.experiences.length} discoveries{" "}
-                  <span className="text-neutral-300 transition group-hover:text-black">
-                    →
-                  </span>
-                </p>
-              </Link>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {courses?.map((course) => (
+              <CourseCard key={course.slug} course={course} />
             ))}
           </div>
         </section>

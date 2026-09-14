@@ -1,26 +1,66 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #000000;
+  --foreground: #f4f4f5;
+  --card: #111111;
+  --card-border: #27272a;
+  --chiliz-red: #ff1744;
+  --chiliz-lime: #d5f500;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-border: var(--card-border);
+  --color-chiliz-red: var(--chiliz-red);
+  --color-chiliz-lime: var(--chiliz-lime);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Reusable card hover: subtle gradient sweep + soft border lift. */
+.hover-card {
+  background-color: var(--card);
+  border: 1px solid var(--card-border);
+  transition: border-color 200ms ease, transform 200ms ease, background 300ms ease;
+}
+
+.hover-card:hover {
+  border-color: #3f3f46;
+  transform: translateY(-2px);
+  background-image: linear-gradient(to right, #18181b, #27272a, #18181b);
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-pop-in {
+  animation: pop-in 180ms ease-out;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-4px); }
+  40%, 60% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: shake 400ms ease-in-out;
 }

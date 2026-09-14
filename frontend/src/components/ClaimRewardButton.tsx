@@ -67,7 +67,7 @@ export function ClaimRewardButton({
 
   if (status === "claimed") {
     return (
-      <div className="text-sm font-medium text-green-700">
+      <div className="text-sm font-medium text-chiliz-lime">
         {label} claimed
         {txHash && (
           <>
@@ -103,12 +103,12 @@ export function ClaimRewardButton({
       <button
         onClick={handleClaim}
         disabled={!isConnected || busy}
-        className="rounded-full border border-black px-5 py-3 text-sm font-semibold transition hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-full border border-zinc-700 px-5 py-3 text-sm font-semibold text-zinc-100 transition hover:border-chiliz-red hover:bg-gradient-to-r hover:from-zinc-900 hover:via-zinc-800 hover:to-zinc-900 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {statusLabel[status]}
       </button>
-      {!isConnected && <p className="mt-2 text-xs text-neutral-500">Connect a wallet to claim.</p>}
-      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+      {!isConnected && <p className="mt-2 text-xs text-zinc-500">Connect a wallet to claim.</p>}
+      {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
     </div>
   );
 }

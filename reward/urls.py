@@ -3,7 +3,8 @@ from django.urls import path
 from .views import (
     BindWalletView,
     ExperienceVoucherView,
-    JourneyVoucherView,
+    GreencardStatusView,
+    GreencardVoucherView,
     ProgressVouchersView,
 )
 
@@ -15,9 +16,14 @@ urlpatterns = [
         name="experience-voucher",
     ),
     path(
-        "journey/<slug:slug>/voucher/",
-        JourneyVoucherView.as_view(),
-        name="journey-voucher",
+        "greencard/status/<str:session_key>/",
+        GreencardStatusView.as_view(),
+        name="greencard-status",
+    ),
+    path(
+        "greencard/voucher/",
+        GreencardVoucherView.as_view(),
+        name="greencard-voucher",
     ),
     path(
         "progress/<str:session_key>/vouchers/",

@@ -3,16 +3,27 @@ from rest_framework.test import APITestCase
 from .models import Choice, Experience, Journey
 
 
-class JourneyProgressTests(APITestCase):
+class CoursePrerequisiteTests(APITestCase):
     def setUp(self):
-        self.journey_a = Journey.objects.create(title="Journey A", slug="journey-a", is_published=True)
-        self.journey_b = Journey.objects.create(title="Journey B", slug="journey-b", is_published=True)
+        self.course1 = Journey.objects.create(
+            title="Course 1", slug="course-1", order=1, is_published=True
+        )
+        self.course2 = Journey.objects.create(
+            title="Course 2", slug="course-2", order=2, is_published=True
+        )
 
-        self.a1 = Experience.objects.create(
-            journey=self.journey_a,
-            title="A1",
-            slug="a1",
-            order=1,
+        self.c1_q1 = self._make_experience(self.course1, order=1)
+        self.c1_q2 = self._make_experience(self.course1, order=2)
+        self.c2_q1 = self._make_experience(self.course2, order=1)
+
+        self.session_key = "session-abc"
+
+    def _make_experience(self, journey, order):
+        experience = Experience.objects.create(
+            journey=journey,
+            title=f"Q{order}",
+            slug=f"q{order}-{journey.slug}",
+            order=order,
             hook="h",
             story="s",
             question="q",
@@ -20,45 +31,71 @@ class JourneyProgressTests(APITestCase):
             xp_reward=10,
             is_published=True,
         )
-        self.a_choice = Choice.objects.create(experience=self.a1, text="Right", order=0, is_correct=True)
+        Choice.objects.create(experience=experience, text="Right", order=0, is_correct=True)
+        Choice.objects.create(experience=experience, text="Wrong", order=1, is_correct=False)
+        return experience
 
-        self.b1 = Experience.objects.create(
-            journey=self.journey_b,
-            title="B1",
-            slug="b1",
-            order=1,
-            hook="h",
-            story="s",
-            question="q",
-            reveal="r",
-            xp_reward=20,
-            is_published=True,
-        )
-        self.b_choice = Choice.objects.create(experience=self.b1, text="Right", order=0, is_correct=True)
+    def _correct_choice(self, experience):
+        return experience.choices.get(is_correct=True)
 
-        self.session_key = "session-xyz"
+    def _wrong_choice(self, experience):
+        return experience.choices.get(is_correct=False)
 
-    def test_progress_is_scoped_per_journey(self):
-        # Complete journey A only.
-        self.client.post(
-            f"/api/learning/experience/{self.a1.id}/answer/",
-            {"choice_id": self.a_choice.id, "session_key": self.session_key},
+    def _start(self, journey):
+        return self.client.post(
+            f"/api/learning/{journey.slug}/start/", {"session_key": self.session_key}
         )
 
-        progress_a = self.client.get(f"/api/learning/{self.journey_a.slug}/progress/{self.session_key}/")
-        self.assertEqual(progress_a.status_code, 200)
-        self.assertTrue(progress_a.data["journey_complete"])
-        self.assertEqual(progress_a.data["xp"], 10)
+    def _answer(self, experience, choice):
+        return self.client.post(
+            f"/api/learning/experience/{experience.id}/answer/",
+            {"choice_id": choice.id, "session_key": self.session_key},
+        )
 
-        # Journey B is untouched, so it should report its own next experience,
-        # not spill over from journey A.
-        progress_b = self.client.get(f"/api/learning/{self.journey_b.slug}/progress/{self.session_key}/")
-        self.assertEqual(progress_b.status_code, 200)
-        self.assertFalse(progress_b.data["journey_complete"])
-        self.assertEqual(progress_b.data["next_experience"]["id"], self.b1.id)
-        # xp is a running total across journeys, shared by the session.
-        self.assertEqual(progress_b.data["xp"], 10)
+    def test_course_list_reports_lock_state(self):
+        response = self.client.get("/api/learning/", {"session_key": self.session_key})
+        by_slug = {j["slug"]: j for j in response.data}
+        self.assertFalse(by_slug["course-1"]["locked"])
+        self.assertTrue(by_slug["course-2"]["locked"])
 
-    def test_unknown_journey_slug_returns_404(self):
-        response = self.client.get(f"/api/learning/does-not-exist/progress/{self.session_key}/")
-        self.assertEqual(response.status_code, 404)
+    def test_second_course_is_locked_until_first_is_passed(self):
+        response = self._start(self.course2)
+        self.assertEqual(response.status_code, 403)
+
+    def test_wrong_answer_fails_the_run_and_does_not_unlock_next_course(self):
+        self._start(self.course1)
+        response = self._answer(self.c1_q1, self._wrong_choice(self.c1_q1))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data["run_failed"])
+        self.assertFalse(response.data["run_passed"])
+
+        locked = self.client.get("/api/learning/", {"session_key": self.session_key})
+        by_slug = {j["slug"]: j for j in locked.data}
+        self.assertFalse(by_slug["course-1"]["passed"])
+        self.assertTrue(by_slug["course-2"]["locked"])
+
+    def test_replaying_after_a_failure_can_still_pass_and_unlock_next_course(self):
+        self._start(self.course1)
+        self._answer(self.c1_q1, self._wrong_choice(self.c1_q1))
+
+        # Restart is just calling start again.
+        self._start(self.course1)
+        r1 = self._answer(self.c1_q1, self._correct_choice(self.c1_q1))
+        self.assertFalse(r1.data["run_complete"])
+        r2 = self._answer(self.c1_q2, self._correct_choice(self.c1_q2))
+        self.assertTrue(r2.data["run_complete"])
+        self.assertTrue(r2.data["run_passed"])
+        self.assertEqual(r2.data["score_percent"], 100)
+
+        listing = self.client.get("/api/learning/", {"session_key": self.session_key})
+        by_slug = {j["slug"]: j for j in listing.data}
+        self.assertTrue(by_slug["course-1"]["passed"])
+        self.assertFalse(by_slug["course-2"]["locked"])
+
+        # Course 2 is now reachable.
+        response = self._start(self.course2)
+        self.assertEqual(response.status_code, 200)
+
+    def test_answering_without_starting_is_rejected(self):
+        response = self._answer(self.c1_q1, self._correct_choice(self.c1_q1))
+        self.assertEqual(response.status_code, 400)

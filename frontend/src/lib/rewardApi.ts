@@ -42,8 +42,23 @@ export function requestExperienceVoucher(sessionKey: string, experienceId: numbe
   });
 }
 
-export function requestJourneyVoucher(sessionKey: string, journeySlug: string) {
-  return postJson<RewardVoucherResponse>(`/journey/${journeySlug}/voucher/`, {
+export type GreencardStatus = {
+  courses_passed: number;
+  total_courses: number;
+  eligible: boolean;
+  voucher: RewardVoucherResponse | null;
+};
+
+export async function fetchGreencardStatus(sessionKey: string): Promise<GreencardStatus> {
+  const response = await fetch(`${REWARD_API}/greencard/status/${sessionKey}/`, {
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error("Failed to load Greencard status");
+  return response.json();
+}
+
+export function requestGreencardVoucher(sessionKey: string) {
+  return postJson<RewardVoucherResponse>("/greencard/voucher/", {
     session_key: sessionKey,
   });
 }

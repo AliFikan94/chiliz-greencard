@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from learning.models import AnswerAttempt, Experience, Journey, UserProgress
+from learning.views import _passed_journey_ids
 
 from .models import RewardVoucher
 from .serializers import RewardVoucherSerializer
@@ -109,18 +110,38 @@ class ExperienceVoucherView(APIView):
         return Response(RewardVoucherSerializer(voucher).data, status=status.HTTP_201_CREATED)
 
 
-class JourneyVoucherView(APIView):
-    def post(self, request, slug):
+class GreencardStatusView(APIView):
+    def get(self, request, session_key):
+        progress = UserProgress.objects.filter(session_key=session_key).first()
+
+        core_journeys = list(Journey.objects.filter(is_published=True).order_by("order", "id"))
+        passed_ids = _passed_journey_ids(progress)
+        passed_count = sum(1 for j in core_journeys if j.id in passed_ids)
+
+        existing_voucher = None
+        if progress:
+            existing_voucher = RewardVoucher.objects.filter(
+                progress=progress, is_greencard=True
+            ).first()
+
+        return Response(
+            {
+                "courses_passed": passed_count,
+                "total_courses": len(core_journeys),
+                "eligible": len(core_journeys) > 0 and passed_count == len(core_journeys),
+                "voucher": RewardVoucherSerializer(existing_voucher).data if existing_voucher else None,
+            }
+        )
+
+
+class GreencardVoucherView(APIView):
+    def post(self, request):
         session_key = request.data.get("session_key")
         if not session_key:
             return Response(
                 {"detail": "session_key is required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        journey = Journey.objects.filter(slug=slug, is_published=True).first()
-        if not journey:
-            return Response({"detail": "Journey not found."}, status=status.HTTP_404_NOT_FOUND)
 
         progress = UserProgress.objects.filter(session_key=session_key).first()
         if not progress or not progress.wallet_address:
@@ -129,26 +150,18 @@ class JourneyVoucherView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        published_experience_ids = set(
-            journey.experiences.filter(is_published=True).values_list("id", flat=True)
-        )
-        if not published_experience_ids:
-            return Response({"detail": "Journey has no published experiences."}, status=status.HTTP_400_BAD_REQUEST)
+        core_journeys = list(Journey.objects.filter(is_published=True))
+        if not core_journeys:
+            return Response({"detail": "No courses published yet."}, status=status.HTTP_400_BAD_REQUEST)
 
-        completed_ids = set(
-            AnswerAttempt.objects.filter(
-                progress=progress,
-                experience_id__in=published_experience_ids,
-                is_correct=True,
-            ).values_list("experience_id", flat=True)
-        )
-        if completed_ids != published_experience_ids:
+        passed_ids = _passed_journey_ids(progress)
+        if not all(j.id in passed_ids for j in core_journeys):
             return Response(
-                {"detail": "Complete every experience in this journey before claiming its badge."},
+                {"detail": "Pass every course with a 100% score before claiming the Greencard."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        existing = RewardVoucher.objects.filter(progress=progress, journey=journey).first()
+        existing = RewardVoucher.objects.filter(progress=progress, is_greencard=True).first()
         if existing:
             return Response(RewardVoucherSerializer(existing).data)
 
@@ -158,14 +171,14 @@ class JourneyVoucherView(APIView):
                 reward_type=REWARD_TYPE_MINT_ACHIEVEMENT_NFT,
                 token_address=ZERO_ADDRESS,
                 amount=0,
-                uri=f"greencard://journey/{journey.slug}",
+                uri="chiliz-greencard",
             )
         except RewardSigningError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
         voucher = RewardVoucher.objects.create(
             progress=progress,
-            journey=journey,
+            is_greencard=True,
             reward_type=RewardVoucher.RewardType.MINT_ACHIEVEMENT_NFT,
             wallet_address=signed["user"],
             token_address=signed["token"],

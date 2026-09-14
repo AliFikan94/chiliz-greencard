@@ -4,25 +4,35 @@ export type Choice = {
   order: number;
 };
 
-export type Experience = {
+export type ExperiencePreview = {
   id: number;
   title: string;
+  slug: string;
+  order: number;
   hook: string;
   story: string;
   question: string;
-  reveal: string;
   xp_reward: number;
   choices: Choice[];
-  order: number;
 };
 
-export type Journey = {
+export type CourseSummary = {
   id: number;
-  slug: string;
   title: string;
+  slug: string;
   description: string;
   cover_image: string;
-  experiences: Experience[];
+  order: number;
+  question_count: number;
+  passed: boolean;
+  locked: boolean;
+};
+
+export type StartRunResult = {
+  question_index: number;
+  total_questions: number;
+  run_complete: boolean;
+  next_experience: ExperiencePreview | null;
 };
 
 export type AnswerResult = {
@@ -30,5 +40,11 @@ export type AnswerResult = {
   reveal: string;
   xp_awarded: number;
   total_xp: number;
-  completed_experiences: number;
+  run_failed: boolean;
+  run_complete: boolean;
+  run_passed: boolean | null;
+  score_percent: number;
+  question_index?: number;
+  total_questions?: number;
+  next_experience: ExperiencePreview | null;
 };

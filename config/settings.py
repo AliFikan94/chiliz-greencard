@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 import os
 from pathlib import Path
 
+from django.db.backends.signals import connection_created
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -92,8 +93,29 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        # SQLite only allows one writer at a time. With the default DEFERRED
+        # transactions, two requests that both try to write (e.g. React
+        # re-invoking an effect in development) can each grab a shared lock
+        # and then deadlock trying to upgrade to a write lock - which raises
+        # "database is locked" immediately, before the busy timeout even gets
+        # a chance to help. IMMEDIATE mode grabs the write lock upfront, so
+        # the second request just waits its turn instead of deadlocking.
+        'OPTIONS': {
+            'timeout': 20,
+            'transaction_mode': 'IMMEDIATE',
+        },
     }
 }
+
+
+def _enable_sqlite_wal_mode(sender, connection, **kwargs):
+    if connection.vendor == 'sqlite':
+        with connection.cursor() as cursor:
+            cursor.execute('PRAGMA journal_mode=WAL;')
+            cursor.execute('PRAGMA synchronous=NORMAL;')
+
+
+connection_created.connect(_enable_sqlite_wal_mode)
 
 
 # Password validation

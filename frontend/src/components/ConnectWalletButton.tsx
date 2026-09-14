@@ -30,16 +30,16 @@ export function ConnectWalletButton({ sessionKey }: { sessionKey: string | null 
   if (isConnected && address) {
     return (
       <div className="flex items-center gap-2">
-        <span className="rounded-full bg-white px-4 py-2 text-sm font-medium shadow-sm">
+        <span className="rounded-full border border-zinc-800 bg-card px-4 py-2 text-sm font-medium text-zinc-200">
           {shortenAddress(address)}
         </span>
         <button
           onClick={() => disconnect()}
-          className="text-xs font-medium text-neutral-500 underline underline-offset-2 hover:text-black"
+          className="text-xs font-medium text-zinc-500 underline underline-offset-2 hover:text-white"
         >
           Disconnect
         </button>
-        {bindError && <span className="text-xs text-red-600">{bindError}</span>}
+        {bindError && <span className="text-xs text-red-500">{bindError}</span>}
       </div>
     );
   }
@@ -50,7 +50,7 @@ export function ConnectWalletButton({ sessionKey }: { sessionKey: string | null 
     <button
       onClick={() => injectedConnector && connect({ connector: injectedConnector })}
       disabled={!injectedConnector || isPending}
-      className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white transition hover:scale-[1.02] disabled:opacity-50"
+      className="rounded-full bg-chiliz-red px-4 py-2 text-sm font-semibold text-white transition hover:scale-[1.02] hover:brightness-110 disabled:opacity-50"
     >
       {isPending ? "Connecting..." : "Connect wallet"}
     </button>

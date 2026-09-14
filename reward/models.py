@@ -1,6 +1,6 @@
 from django.db import models
 
-from learning.models import Experience, Journey, UserProgress
+from learning.models import Experience, UserProgress
 
 
 class RewardVoucher(models.Model):
@@ -20,15 +20,12 @@ class RewardVoucher(models.Model):
         null=True,
         blank=True,
     )
-    journey = models.ForeignKey(
-        Journey,
-        on_delete=models.CASCADE,
-        related_name="reward_vouchers",
-        null=True,
-        blank=True,
-    )
-
     reward_type = models.PositiveSmallIntegerField(choices=RewardType.choices)
+    is_greencard = models.BooleanField(
+        default=False,
+        help_text="The single Chiliz Greencard NFT unlocked by passing every "
+        "core course, as opposed to a per-journey badge.",
+    )
     wallet_address = models.CharField(max_length=42)
     token_address = models.CharField(max_length=42)
     amount = models.CharField(max_length=78, default="0")
@@ -48,9 +45,9 @@ class RewardVoucher(models.Model):
                 name="unique_voucher_per_progress_experience",
             ),
             models.UniqueConstraint(
-                fields=["progress", "journey"],
-                condition=models.Q(journey__isnull=False),
-                name="unique_voucher_per_progress_journey",
+                fields=["progress"],
+                condition=models.Q(is_greencard=True),
+                name="unique_greencard_voucher_per_progress",
             ),
         ]
 
