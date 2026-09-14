@@ -10,6 +10,7 @@ import { ConnectWalletButton } from "@/components/ConnectWalletButton";
 import { GreencardNFT } from "@/components/GreencardNFT";
 import { ShareButtons } from "@/components/ShareButtons";
 import { StreakBadge } from "@/components/StreakBadge";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { fetchCourses } from "@/lib/learningApi";
 import { fetchGreencardStatus, requestGreencardVoucher, GreencardStatus } from "@/lib/rewardApi";
 import { CourseSummary } from "@/lib/types";
@@ -22,28 +23,27 @@ function CourseCard({ course }: { course: CourseSummary }) {
     <>
       <div>
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-zinc-500">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-muted">
             Course {course.order}
           </span>
           {course.passed && (
-            <span className="rounded-full bg-chiliz-lime/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-chiliz-lime">
+            <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-success">
               Passed
             </span>
           )}
           {course.locked && (
-            <svg viewBox="0 0 24 24" className="h-4 w-4 text-zinc-600" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg viewBox="0 0 24 24" className="h-4 w-4 text-muted" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="5" y="11" width="14" height="9" rx="2" />
               <path d="M8 11V8a4 4 0 0 1 8 0v3" />
             </svg>
           )}
         </div>
-        <h2 className="mt-2 text-lg font-semibold tracking-tight text-white">{course.title}</h2>
-        <p className="mt-1 text-sm leading-6 text-zinc-400">{course.description}</p>
+        <h2 className="mt-2 text-lg font-semibold tracking-tight text-foreground">{course.title}</h2>
+        <p className="mt-1 text-sm leading-6 text-muted">{course.description}</p>
       </div>
-      <p className="mt-4 text-xs font-medium text-zinc-500">
+      <p className="mt-4 text-xs font-medium text-muted">
         {course.question_count} questions ·{" "}
-        {course.locked ? "Locked" : course.passed ? "Replay" : "Start"}{" "}
-        <span className="text-zinc-700">→</span>
+        {course.locked ? "Locked" : course.passed ? "Replay" : "Start"} →
       </p>
     </>
   );
@@ -97,23 +97,22 @@ export default function Home() {
         <header className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <ChiliMascot className="h-8 w-8" />
-            <span className="text-xs font-semibold tracking-[0.2em] text-zinc-300">
-              CHILIZ ACADEMY
-            </span>
+            <span className="text-xs font-semibold tracking-[0.2em]">CHILIZ ACADEMY</span>
           </div>
           <div className="flex items-center gap-3">
             <StreakBadge />
+            <ThemeToggle />
             <ConnectWalletButton sessionKey={sessionKey} />
           </div>
         </header>
 
         <section className="py-14">
-          <h1 className="max-w-2xl text-4xl font-semibold leading-[1.05] tracking-[-0.04em] text-white md:text-6xl">
+          <h1 className="max-w-2xl text-4xl font-semibold leading-[1.05] tracking-[-0.04em] md:text-6xl">
             Learn crypto.
             <br />
             Earn your <span className="text-chiliz-red">Greencard</span>.
           </h1>
-          <p className="mt-6 max-w-xl text-lg leading-8 text-zinc-400">
+          <p className="mt-6 max-w-xl text-lg leading-8 text-muted">
             7 bite-sized courses on Chiliz, Fan Tokens, and Web3. Pass every
             course with a 100% score to unlock your onchain Chiliz Greencard.
           </p>
@@ -137,7 +136,7 @@ export default function Home() {
               )}
               {greencard?.voucher && <ShareButtons text={shareText} />}
               {!greencard?.eligible && (
-                <p className="max-w-xs text-sm text-zinc-500">
+                <p className="max-w-xs text-sm text-muted">
                   {greencard
                     ? `${greencard.courses_passed}/${greencard.total_courses} courses passed - keep going to unlock your Greencard.`
                     : "Connect a wallet and start course 1 to begin."}
@@ -148,13 +147,13 @@ export default function Home() {
         </section>
 
         <section className="pb-16">
-          <h2 className="mb-5 text-xs font-semibold uppercase tracking-[0.25em] text-zinc-500">
+          <h2 className="mb-5 text-xs font-semibold uppercase tracking-[0.25em] text-muted">
             Core curriculum
           </h2>
 
-          {courses === null && <p className="text-sm text-zinc-500">Loading courses...</p>}
+          {courses === null && <p className="text-sm text-muted">Loading courses...</p>}
           {courses && courses.length === 0 && (
-            <p className="text-sm text-zinc-500">No courses published yet. Check back soon.</p>
+            <p className="text-sm text-muted">No courses published yet. Check back soon.</p>
           )}
 
           <div className="grid gap-4 sm:grid-cols-2">

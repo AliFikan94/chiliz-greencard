@@ -7,6 +7,7 @@ import { ChiliMascot } from "@/components/ChiliMascot";
 import { ClaimRewardButton } from "@/components/ClaimRewardButton";
 import { ConnectWalletButton } from "@/components/ConnectWalletButton";
 import { ShareButtons } from "@/components/ShareButtons";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { startCourse, submitAnswer } from "@/lib/learningApi";
 import { requestExperienceVoucher } from "@/lib/rewardApi";
 import { AnswerResult, ExperiencePreview } from "@/lib/types";
@@ -101,8 +102,8 @@ export default function JourneyPage(props: PageProps<"/journey/[slug]">) {
     return (
       <main className="grid min-h-screen place-items-center bg-background px-6 text-center">
         <div>
-          <p className="text-sm text-zinc-400">{error}</p>
-          <Link href="/" className="mt-4 inline-block text-sm font-semibold text-chiliz-red underline">
+          <p className="text-sm text-muted">{error}</p>
+          <Link href="/" className="mt-4 inline-block text-sm font-semibold text-foreground underline">
             Back to courses
           </Link>
         </div>
@@ -119,21 +120,22 @@ export default function JourneyPage(props: PageProps<"/journey/[slug]">) {
         <header className="flex items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2">
             <ChiliMascot className="h-7 w-7" />
-            <span className="text-xs font-semibold tracking-[0.2em] text-zinc-300">
-              CHILIZ ACADEMY
-            </span>
+            <span className="text-xs font-semibold tracking-[0.2em]">CHILIZ ACADEMY</span>
           </Link>
-          <ConnectWalletButton sessionKey={sessionKey} />
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <ConnectWalletButton sessionKey={sessionKey} />
+          </div>
         </header>
 
         {!runComplete && (
           <div className="mt-8">
-            <p className="mb-2 text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+            <p className="mb-2 text-xs font-medium uppercase tracking-[0.2em] text-muted">
               Question {questionIndex} of {totalQuestions}
             </p>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-900">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-card-border">
               <div
-                className="h-full rounded-full bg-chiliz-red transition-all duration-500 ease-out"
+                className="h-full rounded-full bg-foreground transition-all duration-500 ease-out"
                 style={{ width: `${(questionIndex / totalQuestions) * 100}%` }}
               />
             </div>
@@ -142,21 +144,19 @@ export default function JourneyPage(props: PageProps<"/journey/[slug]">) {
 
         {question && !runComplete && (
           <section className="flex flex-1 flex-col justify-center py-14">
-            <p className="mb-4 text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+            <p className="mb-4 text-xs font-medium uppercase tracking-[0.2em] text-muted">
               {question.title}
             </p>
-            <h1 className="max-w-2xl text-3xl font-semibold leading-tight tracking-[-0.03em] text-white md:text-4xl">
+            <h1 className="max-w-2xl text-3xl font-semibold leading-tight tracking-[-0.03em] md:text-4xl">
               {question.hook}
             </h1>
-            <p className="mt-6 max-w-xl whitespace-pre-line text-base leading-7 text-zinc-400">
+            <p className="mt-6 max-w-xl whitespace-pre-line text-base leading-7 text-muted">
               {question.story}
             </p>
 
             {!answer && (
               <div className="mt-10">
-                <h2 className="mb-4 text-lg font-semibold tracking-tight text-white">
-                  {question.question}
-                </h2>
+                <h2 className="mb-4 text-lg font-semibold tracking-tight">{question.question}</h2>
                 <div className="grid gap-3">
                   {question.choices.map((choice) => {
                     const selected = selectedChoice === choice.id;
@@ -167,13 +167,13 @@ export default function JourneyPage(props: PageProps<"/journey/[slug]">) {
                         onClick={() => handleAnswer(choice.id)}
                         className={[
                           "hover-card rounded-2xl px-5 py-4 text-left transition-all duration-150",
-                          selected ? "scale-[0.98] border-chiliz-red" : "",
+                          selected ? "scale-[0.98] border-foreground" : "",
                           submitting ? "cursor-wait opacity-70" : "",
                         ].join(" ")}
                       >
                         <div className="flex items-center justify-between gap-4">
-                          <span className="text-base leading-6 text-zinc-100">{choice.text}</span>
-                          <span className="text-zinc-600">→</span>
+                          <span className="text-base leading-6">{choice.text}</span>
+                          <span className="text-muted">→</span>
                         </div>
                       </button>
                     );
@@ -184,16 +184,16 @@ export default function JourneyPage(props: PageProps<"/journey/[slug]">) {
 
             {answer && !runComplete && (
               <div className="mt-10 animate-pop-in">
-                <div className="mb-6 rounded-3xl border border-zinc-800 bg-card p-6">
+                <div className="mb-6 rounded-3xl bg-foreground p-6 text-background">
                   <div className="mb-3 flex items-center justify-between">
-                    <span className="text-xs font-medium uppercase tracking-[0.2em] text-chiliz-lime">
+                    <span className="text-xs font-medium uppercase tracking-[0.2em] opacity-60">
                       Correct
                     </span>
                     {answer.xp_awarded > 0 && (
-                      <span className="text-sm font-semibold text-white">+{answer.xp_awarded} XP</span>
+                      <span className="text-sm font-semibold">+{answer.xp_awarded} XP</span>
                     )}
                   </div>
-                  <p className="whitespace-pre-line text-base leading-7 text-zinc-300">{answer.reveal}</p>
+                  <p className="whitespace-pre-line text-base leading-7">{answer.reveal}</p>
                 </div>
 
                 {sessionKey && (
@@ -207,7 +207,7 @@ export default function JourneyPage(props: PageProps<"/journey/[slug]">) {
 
                 <button
                   onClick={nextQuestion}
-                  className="rounded-full bg-chiliz-red px-7 py-4 text-sm font-semibold text-white transition hover:scale-[1.02] hover:brightness-110"
+                  className="rounded-full bg-foreground px-7 py-4 text-sm font-semibold text-background transition hover:opacity-85"
                 >
                   Next question →
                 </button>
@@ -220,13 +220,13 @@ export default function JourneyPage(props: PageProps<"/journey/[slug]">) {
           <section className="flex flex-1 flex-col items-center justify-center py-14 text-center animate-pop-in">
             {runPassed ? (
               <>
-                <p className="mb-4 text-xs font-medium uppercase tracking-[0.2em] text-chiliz-lime">
+                <p className="mb-4 text-xs font-medium uppercase tracking-[0.2em] text-success">
                   100% - Course passed
                 </p>
-                <h1 className="max-w-lg text-4xl font-semibold leading-[1.05] tracking-[-0.04em] text-white md:text-5xl">
+                <h1 className="max-w-lg text-4xl font-semibold leading-[1.05] tracking-[-0.04em] md:text-5xl">
                   Nailed every question.
                 </h1>
-                <p className="mt-6 max-w-md text-base leading-7 text-zinc-400">
+                <p className="mt-6 max-w-md text-base leading-7 text-muted">
                   The next course is now unlocked.
                 </p>
 
@@ -245,13 +245,13 @@ export default function JourneyPage(props: PageProps<"/journey/[slug]">) {
               </>
             ) : (
               <>
-                <p className="mb-4 text-xs font-medium uppercase tracking-[0.2em] text-red-500">
+                <p className="mb-4 text-xs font-medium uppercase tracking-[0.2em] text-chiliz-red">
                   Not quite 100%
                 </p>
-                <h1 className="max-w-lg text-4xl font-semibold leading-[1.05] tracking-[-0.04em] text-white md:text-5xl">
+                <h1 className="max-w-lg text-4xl font-semibold leading-[1.05] tracking-[-0.04em] md:text-5xl">
                   One miss ends the run.
                 </h1>
-                <p className="mt-6 max-w-md text-base leading-7 text-zinc-400">
+                <p className="mt-6 max-w-md text-base leading-7 text-muted">
                   Scored {answer?.score_percent}% ({(answer?.question_index ?? 1) - 1}/
                   {answer?.total_questions} correct). Every question needs to be right, first try,
                   to pass. Give it another go.
@@ -262,13 +262,13 @@ export default function JourneyPage(props: PageProps<"/journey/[slug]">) {
             <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
               <button
                 onClick={restart}
-                className="rounded-full bg-chiliz-red px-7 py-4 text-sm font-semibold text-white transition hover:scale-[1.02] hover:brightness-110"
+                className="rounded-full bg-foreground px-7 py-4 text-sm font-semibold text-background transition hover:opacity-85"
               >
                 {runPassed ? "Replay course" : "Restart course"}
               </button>
               <Link
                 href="/"
-                className="rounded-full border border-zinc-700 px-7 py-4 text-sm font-semibold text-zinc-200 transition hover:border-zinc-500"
+                className="rounded-full border border-foreground px-7 py-4 text-sm font-semibold text-foreground transition hover:bg-foreground hover:text-background"
               >
                 Back to courses
               </Link>

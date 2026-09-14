@@ -100,7 +100,7 @@ export function GreencardNFT({
               </p>
               <p
                 className={`text-sm font-bold ${
-                  unlocked ? "text-chiliz-lime" : "text-zinc-500"
+                  unlocked ? "text-success" : "text-zinc-500"
                 }`}
               >
                 {unlocked ? issuedDate || "ISSUED" : `${coursesPassed}/${totalCourses} LOCKED`}

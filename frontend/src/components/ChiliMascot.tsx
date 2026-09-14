@@ -6,7 +6,7 @@ export function ChiliMascot({ className = "h-8 w-8" }: { className?: string }) {
     <svg viewBox="0 0 64 64" fill="none" className={className} aria-hidden="true">
       <path
         d="M35 8c3 3 2 7-1 9-6 4-11 10-12 19-1 8 4 16 12 18 9 2 18-5 19-15 1-9-5-15-9-19-3-3-6-3-8-1-2 2-2 5 0 7 2 2 5 3 7 6"
-        stroke="var(--chiliz-red, #ff1744)"
+        stroke="var(--chiliz-red, #d1233f)"
         strokeWidth="7"
         strokeLinecap="round"
         fill="none"

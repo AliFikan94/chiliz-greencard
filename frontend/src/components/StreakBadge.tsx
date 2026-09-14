@@ -15,7 +15,7 @@ export function StreakBadge() {
   if (!streak) return null;
 
   return (
-    <div className="flex items-center gap-1 rounded-full border border-zinc-800 bg-card px-3 py-2 text-sm font-medium text-zinc-200">
+    <div className="flex items-center gap-1 rounded-full border border-card-border bg-card px-3 py-2 text-sm font-medium text-foreground">
       <span aria-hidden="true">🔥</span>
       <span>{streak}-day streak</span>
     </div>
