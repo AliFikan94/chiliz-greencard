@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import { ClaimRewardButton } from "@/components/ClaimRewardButton";
 import { ConnectWalletButton } from "@/components/ConnectWalletButton";
+import { DidYouKnow } from "@/components/DidYouKnow";
 import { GraduationCapIcon } from "@/components/GraduationCapIcon";
 import { GreencardNFT } from "@/components/GreencardNFT";
 import { ShareButtons } from "@/components/ShareButtons";
@@ -107,15 +108,21 @@ export default function Home() {
         </header>
 
         <section className="py-14">
-          <h1 className="max-w-2xl text-4xl font-semibold leading-[1.05] tracking-[-0.04em] md:text-6xl">
-            Learn crypto.
-            <br />
-            Earn your <span className="text-success">Greencard</span>.
-          </h1>
-          <p className="mt-6 max-w-xl text-lg leading-8 text-muted">
-            7 bite-sized courses on Chiliz, Fan Tokens, and Web3. Pass every
-            course with a 100% score to unlock your onchain Chiliz Greencard.
-          </p>
+          <div className="grid gap-8 md:grid-cols-[3fr_2fr] md:items-center md:gap-12">
+            <div>
+              <h1 className="max-w-2xl text-4xl font-semibold leading-[1.05] tracking-[-0.04em] md:text-6xl">
+                Learn crypto.
+                <br />
+                Earn your <span className="text-success">Greencard</span>.
+              </h1>
+              <p className="mt-6 max-w-xl text-lg leading-8 text-muted">
+                7 bite-sized courses on Chiliz, Fan Tokens, and Web3. Pass every
+                course with a 100% score to unlock your onchain Chiliz Greencard.
+              </p>
+            </div>
+
+            <DidYouKnow />
+          </div>
         </section>
 
         <section className="pb-14">
