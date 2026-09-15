@@ -1,400 +1,173 @@
 "use client";
 
+import Link from "next/link";
+import { useAccount } from "wagmi";
 import { useEffect, useState } from "react";
 
-type Choice = {
-  id: number;
-  text: string;
-  order: number;
-};
+import { ClaimRewardButton } from "@/components/ClaimRewardButton";
+import { ConnectWalletButton } from "@/components/ConnectWalletButton";
+import { DidYouKnow } from "@/components/DidYouKnow";
+import { GraduationCapIcon } from "@/components/GraduationCapIcon";
+import { GreencardNFT } from "@/components/GreencardNFT";
+import { ShareButtons } from "@/components/ShareButtons";
+import { StreakBadge } from "@/components/StreakBadge";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { fetchCourses } from "@/lib/learningApi";
+import { fetchGreencardStatus, requestGreencardVoucher, GreencardStatus } from "@/lib/rewardApi";
+import { CourseSummary } from "@/lib/types";
 
-type Experience = {
-  id: number;
-  title: string;
-  hook: string;
-  story: string;
-  question: string;
-  reveal: string;
-  xp_reward: number;
-  choices: Choice[];
-  order: number;
-};
+function CourseCard({ course }: { course: CourseSummary }) {
+  const base =
+    "hover-card relative flex flex-col justify-between rounded-2xl p-5 min-h-[150px]";
 
-type Journey = {
-  title: string;
-  description: string;
-  experiences: Experience[];
-};
-
-type AnswerResult = {
-  correct: boolean;
-  reveal: string;
-  xp_awarded: number;
-  total_xp: number;
-  completed_experiences: number;
-};
-
-const API = "http://127.0.0.1:8000/api/learning";
-
-export default function Home() {
-  const [experience, setExperience] = useState<Experience | null>(null);
-  const [journey, setJourney] = useState<Journey | null>(null);
-
-  const [selectedChoice, setSelectedChoice] = useState<number | null>(null);
-  const [answer, setAnswer] = useState<AnswerResult | null>(null);
-
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [loadingNext, setLoadingNext] = useState(false);
-  const [totalXp, setTotalXp] = useState(0);
-  const [completedExperiences, setCompletedExperiences] = useState(0);
-
-  const [journeyComplete, setJourneyComplete] = useState(false);
-
-  useEffect(() => {
-    async function initialize() {
-      await loadJourney();
-      await loadProgress();
-    }
-
-    initialize();
-  }, []);
-
-  function resetJourney() {
-    localStorage.removeItem("greencard_session");
-
-    setJourneyComplete(false);
-    setTotalXp(0);
-    setCompletedExperiences(0);
-
-    window.location.reload();
-  }
-
-  async function loadProgress() {
-    const sessionKey = localStorage.getItem("greencard_session");
-
-    if (!sessionKey) return;
-
-    try {
-      const response = await fetch(
-        `${API}/progress/${sessionKey}/`,
-        { cache: "no-store" }
-      );
-
-      if (!response.ok) return;
-
-      const data = await response.json();
-
-      setTotalXp(data.xp);
-      setCompletedExperiences(data.completed_experiences);
-
-      if (data.journey_complete) {
-        setJourneyComplete(true);
-        return;
-      }
-
-      if (data.next_experience) {
-        setExperience(data.next_experience);
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
-  async function loadJourney() {
-    try {
-      const response = await fetch(
-        `${API}/welcome-to-fan-tokens/`,
-        { cache: "no-store" }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to load journey");
-      }
-
-      const data: Journey = await response.json();
-
-      setJourney(data);
-
-      if (data.experiences.length > 0) {
-        setExperience(data.experiences[0]);
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function submitAnswer(choiceId: number) {
-    if (!experience || submitting || answer) return;
-
-    setSelectedChoice(choiceId);
-    setSubmitting(true);
-
-    try {
-      let sessionKey = localStorage.getItem("greencard_session");
-
-      if (!sessionKey) {
-        sessionKey = crypto.randomUUID();
-        localStorage.setItem("greencard_session", sessionKey);
-      }
-
-      const response = await fetch(
-        `${API}/experience/${experience.id}/answer/`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            choice_id: choiceId,
-            session_key: sessionKey,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to submit answer");
-      }
-
-      const result: AnswerResult = await response.json();
-
-      setAnswer(result);
-      setTotalXp(result.total_xp);
-      setCompletedExperiences(result.completed_experiences);
-    } catch (error) {
-      console.error(error);
-      setSelectedChoice(null);
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function nextExperience() {
-    if (!experience || loadingNext) return;
-
-    setLoadingNext(true);
-
-    try {
-      const response = await fetch(
-        `${API}/experience/${experience.id}/next/`,
-        { cache: "no-store" }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to load next experience");
-      }
-
-      const result = await response.json();
-
-      if (result.complete) {
-        setJourneyComplete(true);
-        return;
-      }
-
-      setExperience(result.next);
-      setSelectedChoice(null);
-      setAnswer(null);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoadingNext(false);
-    }
-  }
-
-  if (loading) {
-    return (
-      <main className="grid min-h-screen place-items-center bg-[#f5f5f0]">
-        <div className="text-sm text-neutral-500">
-          Loading...
+  const inner = (
+    <>
+      <div>
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-muted">
+            Course {course.order}
+          </span>
+          {course.passed && (
+            <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-success">
+              Passed
+            </span>
+          )}
+          {course.locked && (
+            <svg viewBox="0 0 24 24" className="h-4 w-4 text-muted" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="5" y="11" width="14" height="9" rx="2" />
+              <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+            </svg>
+          )}
         </div>
-      </main>
-    );
-  }
+        <h2 className="mt-2 text-lg font-semibold tracking-tight text-foreground">{course.title}</h2>
+        <p className="mt-1 text-sm leading-6 text-muted">{course.description}</p>
+      </div>
+      <p className="mt-4 text-xs font-medium text-muted">
+        {course.question_count} questions ·{" "}
+        {course.locked ? "Locked" : course.passed ? "Replay" : "Start"} →
+      </p>
+    </>
+  );
 
-  if (journeyComplete) {
-    return (
-      <main className="min-h-screen bg-[#f5f5f0] text-[#111]">
-        <div className="mx-auto flex min-h-screen max-w-4xl flex-col px-6 py-8 md:px-10">
-          <header className="flex items-center justify-between">
-            <div className="text-xs font-semibold tracking-[0.2em]">
-              CHILIZ GREENCARD
-            </div>
-
-            <div className="rounded-full bg-white px-4 py-2 text-sm font-medium shadow-sm">
-              {totalXp} XP
-            </div>
-          </header>
-
-          <section className="flex flex-1 flex-col items-center justify-center text-center">
-            <p className="mb-6 text-xs font-medium uppercase tracking-[0.2em] text-neutral-500">
-              Journey complete
-            </p>
-
-            <h1 className="max-w-3xl text-5xl font-semibold leading-[1.02] tracking-[-0.05em] md:text-7xl">
-              You just scratched the surface.
-            </h1>
-
-            <p className="mt-8 max-w-xl text-lg leading-8 text-neutral-600">
-              You completed {completedExperiences} discoveries and earned{" "}
-              <strong>{totalXp} XP</strong>.
-            </p>
-
-            <div className="mt-10 rounded-3xl bg-black px-8 py-7 text-left text-white">
-              <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">
-                Greencard status
-              </p>
-
-              <p className="mt-3 text-2xl font-semibold">
-                Fan Token Curious
-              </p>
-
-              <p className="mt-2 text-sm leading-6 text-neutral-400">
-                You know enough to start asking better questions.
-              </p>
-            </div>
-
-            <button
-              onClick={resetJourney}
-              className="mt-8 rounded-full border border-black px-7 py-4 text-sm font-semibold transition hover:bg-black hover:text-white"
-            >
-              Restart journey
-            </button>
-          </section>
-        </div>
-      </main>
-    );
-  }
-
-  if (!experience || !journey) {
-    return (
-      <main className="grid min-h-screen place-items-center bg-[#f5f5f0]">
-        <div className="text-sm text-neutral-500">
-          Unable to load experience.
-        </div>
-      </main>
-    );
+  if (course.locked) {
+    return <div className={`${base} cursor-not-allowed opacity-50`}>{inner}</div>;
   }
 
   return (
-    <main className="min-h-screen bg-[#f5f5f0] text-[#111]">
-      <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-6 py-6 md:px-10 md:py-8">
-        <header className="flex items-center justify-between">
-          <div className="text-xs font-semibold tracking-[0.2em]">
-            CHILIZ GREENCARD
-          </div>
+    <Link href={`/journey/${course.slug}`} className={base}>
+      {inner}
+    </Link>
+  );
+}
 
-          <div className="rounded-full bg-white px-4 py-2 text-sm font-medium shadow-sm">
-            {totalXp} XP
+export default function Home() {
+  const { address } = useAccount();
+  const [sessionKey, setSessionKey] = useState<string | null>(null);
+  const [courses, setCourses] = useState<CourseSummary[] | null>(null);
+  const [greencard, setGreencard] = useState<GreencardStatus | null>(null);
+
+  useEffect(() => {
+    let key = localStorage.getItem("greencard_session");
+    if (!key) {
+      key = crypto.randomUUID();
+      localStorage.setItem("greencard_session", key);
+    }
+    // localStorage only exists client-side, so reading it (and thus knowing
+    // the session key) can only happen after mount, not during render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSessionKey(key);
+  }, []);
+
+  useEffect(() => {
+    if (!sessionKey) return;
+
+    fetchCourses(sessionKey)
+      .then(setCourses)
+      .catch(() => setCourses([]));
+
+    fetchGreencardStatus(sessionKey)
+      .then(setGreencard)
+      .catch(() => {});
+  }, [sessionKey]);
+
+  const shareText = "I just unlocked my Chiliz Greencard on Chiliz Academy! 🌶️";
+
+  return (
+    <main className="min-h-screen bg-background text-foreground">
+      <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-6 py-6 md:px-10 md:py-8">
+        <header className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <GraduationCapIcon className="h-8 w-8" />
+            <span className="text-xs font-semibold tracking-[0.2em]">CHILIZ ACADEMY</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <StreakBadge />
+            <ThemeToggle />
+            <ConnectWalletButton sessionKey={sessionKey} />
           </div>
         </header>
 
-        <div className="mt-6 h-1 w-full overflow-hidden rounded-full bg-neutral-200">
-          <div
-            className="h-full rounded-full bg-black transition-all duration-500"
-            style={{
-              width: `${Math.min(
-                (((experience?.order ?? 1) - 1) / 5) * 100,
-                100
-              )}%`,
-            }}
-          />
-        </div>
+        <section className="py-14">
+          <div className="grid gap-8 md:grid-cols-[3fr_2fr] md:items-center md:gap-12">
+            <div>
+              <h1 className="max-w-2xl text-4xl font-semibold leading-[1.05] tracking-[-0.04em] md:text-6xl">
+                Learn crypto.
+                <br />
+                Earn your <span className="text-success">Greencard</span>.
+              </h1>
+              <p className="mt-6 max-w-xl text-lg leading-8 text-muted">
+                7 bite-sized courses on Chiliz, Fan Tokens, and Web3. Pass every
+                course with a 100% score to unlock your onchain Chiliz Greencard.
+              </p>
+            </div>
 
-        <section className="flex flex-1 flex-col justify-center py-16">
-          <div className="max-w-4xl">
-            <p className="mb-6 text-xs font-medium uppercase tracking-[0.2em] text-neutral-500">
-              {journey.title} · 0{experience.order}
-            </p>
-
-            <h1 className="max-w-3xl text-4xl font-semibold leading-[1.02] tracking-[-0.045em] md:text-6xl">
-              {experience.hook}
-            </h1>
-
-            <p className="mt-8 max-w-2xl whitespace-pre-line text-lg leading-8 text-neutral-600">
-              {experience.story}
-            </p>
+            <DidYouKnow />
           </div>
+        </section>
 
-          {!answer && (
-            <div className="mt-14 max-w-3xl">
-              <h2 className="mb-5 text-xl font-semibold tracking-tight">
-                {experience.question}
-              </h2>
+        <section className="pb-14">
+          <div className="flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
+            <GreencardNFT
+              walletAddress={address ?? null}
+              coursesPassed={greencard?.courses_passed ?? 0}
+              totalCourses={greencard?.total_courses ?? 7}
+              unlocked={!!greencard?.voucher}
+            />
 
-              <div className="grid gap-3">
-                {experience.choices.map((choice) => {
-                  const selected = selectedChoice === choice.id;
-
-                  return (
-                    <button
-                      key={choice.id}
-                      disabled={submitting}
-                      onClick={() => submitAnswer(choice.id)}
-                      className={[
-                        "group rounded-2xl border bg-white px-5 py-5 text-left transition-all duration-200",
-                        "hover:-translate-y-0.5 hover:border-black hover:shadow-md",
-                        selected
-                          ? "border-black shadow-md"
-                          : "border-neutral-200",
-                        submitting
-                          ? "cursor-wait opacity-70"
-                          : "",
-                      ].join(" ")}
-                    >
-                      <div className="flex items-center justify-between gap-4">
-                        <span className="text-base leading-6">
-                          {choice.text}
-                        </span>
-
-                        <span className="text-neutral-300 transition group-hover:text-black">
-                          →
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {answer && (
-            <div className="mt-14 max-w-3xl">
-              <div
-                className={[
-                  "mb-8 rounded-3xl p-6 md:p-8",
-                  answer.correct
-                    ? "bg-black text-white"
-                    : "bg-neutral-200 text-black",
-                ].join(" ")}
-              >
-                <div className="mb-4 flex items-center justify-between">
-                  <span className="text-xs font-medium uppercase tracking-[0.2em] opacity-60">
-                    {answer.correct ? "Correct" : "Not quite"}
-                  </span>
-
-                  {answer.xp_awarded > 0 && (
-                    <span className="text-sm font-semibold">
-                      +{answer.xp_awarded} XP
-                    </span>
-                  )}
-                </div>
-
-                <p className="whitespace-pre-line text-lg leading-8">
-                  {answer.reveal}
+            <div className="flex flex-col gap-4">
+              {greencard?.eligible && !greencard.voucher && sessionKey && (
+                <ClaimRewardButton
+                  label="your Chiliz Greencard"
+                  requestVoucher={() => requestGreencardVoucher(sessionKey)}
+                />
+              )}
+              {greencard?.voucher && <ShareButtons text={shareText} />}
+              {!greencard?.eligible && (
+                <p className="max-w-xs text-sm text-muted">
+                  {greencard
+                    ? `${greencard.courses_passed}/${greencard.total_courses} courses passed - keep going to unlock your Greencard.`
+                    : "Connect a wallet and start course 1 to begin."}
                 </p>
-              </div>
-
-              <button
-                onClick={nextExperience}
-                disabled={loadingNext}
-                className="rounded-full bg-black px-7 py-4 text-sm font-semibold text-white transition hover:scale-[1.02] disabled:opacity-50"
-              >
-                {loadingNext ? "Loading..." : "Next discovery →"}
-              </button>
+              )}
             </div>
+          </div>
+        </section>
+
+        <section className="pb-16">
+          <h2 className="mb-5 text-xs font-semibold uppercase tracking-[0.25em] text-muted">
+            Core curriculum
+          </h2>
+
+          {courses === null && <p className="text-sm text-muted">Loading courses...</p>}
+          {courses && courses.length === 0 && (
+            <p className="text-sm text-muted">No courses published yet. Check back soon.</p>
           )}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {courses?.map((course) => (
+              <CourseCard key={course.slug} course={course} />
+            ))}
+          </div>
         </section>
       </div>
     </main>

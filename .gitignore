@@ -3,10 +3,13 @@ victor/
 __pycache__/
 *.py[cod]
 *.pyo
+.venv/
+venv/
 
 # Django
 db.sqlite3
 *.sqlite3
+staticfiles/
 
 # Environment
 .env

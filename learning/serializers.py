@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Journey, Experience, Choice
+from .models import Experience, Choice
 
 
 class ChoiceSerializer(serializers.ModelSerializer):
@@ -9,6 +9,11 @@ class ChoiceSerializer(serializers.ModelSerializer):
 
 
 class ExperienceSerializer(serializers.ModelSerializer):
+    """Used to preview the *next* question. Deliberately excludes `reveal`
+    (the answer explanation), which is only ever sent back in the response
+    to actually answering that question - never ahead of time.
+    """
+
     choices = ChoiceSerializer(many=True, read_only=True)
 
     class Meta:
@@ -21,22 +26,6 @@ class ExperienceSerializer(serializers.ModelSerializer):
             "hook",
             "story",
             "question",
-            "reveal",
             "xp_reward",
             "choices",
-        )
-
-
-class JourneySerializer(serializers.ModelSerializer):
-    experiences = ExperienceSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Journey
-        fields = (
-            "id",
-            "title",
-            "slug",
-            "description",
-            "cover_image",
-            "experiences",
         )

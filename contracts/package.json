@@ -1,0 +1,20 @@
+{
+  "name": "chiliz-greencard-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Onchain reward contracts for the Greencard learn2earn platform on Chiliz Chain",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:spicy": "hardhat run scripts/deploy.js --network spicy",
+    "deploy:chiliz": "hardhat run scripts/deploy.js --network chiliz"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "dotenv": "^17.4.2",
+    "hardhat": "^2.22.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.2"
+  }
+}
