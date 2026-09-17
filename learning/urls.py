@@ -2,11 +2,9 @@ from django.urls import path
 
 from .views import (
     JourneyListView,
-    JourneyDetailView,
-    ExperienceDetailView,
+    LeaderboardView,
+    StartJourneyView,
     SubmitAnswerView,
-    NextExperienceView,
-    ProgressView,
 )
 
 urlpatterns = [
@@ -17,32 +15,20 @@ urlpatterns = [
     ),
 
     path(
-        "<slug:slug>/",
-        JourneyDetailView.as_view(),
-        name="journey-detail",
+        "leaderboard/",
+        LeaderboardView.as_view(),
+        name="leaderboard",
     ),
 
     path(
-        "experience/<int:id>/",
-        ExperienceDetailView.as_view(),
-        name="experience-detail",
+        "<slug:slug>/start/",
+        StartJourneyView.as_view(),
+        name="journey-start",
     ),
 
     path(
         "experience/<int:experience_id>/answer/",
         SubmitAnswerView.as_view(),
         name="submit-answer",
-    ),
-
-    path(
-        "experience/<int:experience_id>/next/",
-        NextExperienceView.as_view(),
-        name="next-experience",
-    ),
-
-    path(
-        "progress/<str:session_key>/",
-        ProgressView.as_view(),
-        name="progress",
     ),
 ]

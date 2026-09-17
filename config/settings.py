@@ -10,22 +10,52 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
+
+import dj_database_url
+from django.db.backends.signals import connection_created
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-66@6!@s3*q9bu4jvxp_(qv_s9-*36d&40qnke%u5@7*o7%4)o&'
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY',
+    'django-insecure-66@6!@s3*q9bu4jvxp_(qv_s9-*36d&40qnke%u5@7*o7%4)o&',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+    if host.strip()
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',')
+    if origin.strip()
+]
+
+if not DEBUG:
+    # Railway (like most PaaS hosts) terminates TLS at its edge and proxies
+    # to the app over plain HTTP, so Django needs to trust its
+    # X-Forwarded-Proto header to know a request was actually HTTPS -
+    # without this, SECURE_SSL_REDIRECT would redirect-loop forever.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 
 # Application definition
@@ -49,6 +79,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -56,8 +87,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     "corsheaders.middleware.CorsMiddleware",
-    "django.middleware.security.SecurityMiddleware",
-   
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -83,12 +112,43 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Railway (and most PaaS hosts) inject a DATABASE_URL for their managed
+# Postgres. SQLite's file lives on ephemeral container storage there, so
+# every redeploy or restart would silently wipe courses/progress - use
+# Postgres whenever a DATABASE_URL is provided, and only fall back to
+# SQLite for local dev.
+if os.environ.get('DATABASE_URL'):
+    DATABASES = {
+        'default': dj_database_url.parse(os.environ['DATABASE_URL'], conn_max_age=600)
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+            # SQLite only allows one writer at a time. With the default DEFERRED
+            # transactions, two requests that both try to write (e.g. React
+            # re-invoking an effect in development) can each grab a shared lock
+            # and then deadlock trying to upgrade to a write lock - which raises
+            # "database is locked" immediately, before the busy timeout even gets
+            # a chance to help. IMMEDIATE mode grabs the write lock upfront, so
+            # the second request just waits its turn instead of deadlocking.
+            'OPTIONS': {
+                'timeout': 20,
+                'transaction_mode': 'IMMEDIATE',
+            },
+        }
+    }
+
+
+def _enable_sqlite_wal_mode(sender, connection, **kwargs):
+    if connection.vendor == 'sqlite':
+        with connection.cursor() as cursor:
+            cursor.execute('PRAGMA journal_mode=WAL;')
+            cursor.execute('PRAGMA synchronous=NORMAL;')
+
+
+connection_created.connect(_enable_sqlite_wal_mode)
 
 
 # Password validation
@@ -126,6 +186,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
 
 
 # Email
@@ -139,4 +205,34 @@ MAILERS = {
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    *[
+        origin.strip()
+        for origin in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
+        if origin.strip()
+    ],
 ]
+
+# Vercel preview URLs change on every deploy (branch/PR previews get a new
+# subdomain each time), so allow the whole *.vercel.app family by pattern
+# rather than needing to update an env var on every push.
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
+]
+
+
+# Onchain rewards (Chiliz Chain)
+# https://docs.chiliz.com
+
+# Private key of the backend's voucher-signing wallet. Only ever signs EIP-712
+# vouchers — it never holds or moves funds, so a leak only lets someone forge
+# reward eligibility (mitigated by rotating RewardDistributor.signer), not
+# steal treasury funds.
+REWARD_SIGNER_PRIVATE_KEY = os.environ.get("REWARD_SIGNER_PRIVATE_KEY", "")
+
+REWARD_DISTRIBUTOR_ADDRESS = os.environ.get("REWARD_DISTRIBUTOR_ADDRESS", "")
+
+# 88882 = Chiliz Spicy testnet, 88888 = Chiliz mainnet.
+CHILIZ_CHAIN_ID = int(os.environ.get("CHILIZ_CHAIN_ID", "88882"))
+
+# How long an issued voucher remains claimable before it expires.
+REWARD_VOUCHER_TTL_SECONDS = int(os.environ.get("REWARD_VOUCHER_TTL_SECONDS", str(15 * 60)))

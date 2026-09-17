@@ -6,10 +6,15 @@ class Journey(models.Model):
     slug = models.SlugField(unique=True)
     description = models.TextField(blank=True)
     cover_image = models.URLField(blank=True)
+    order = models.PositiveIntegerField(
+        default=0,
+        help_text="Course number in the curriculum. Course N+1 stays "
+        "locked until course N is passed with a 100% score.",
+    )
     is_published = models.BooleanField(default=False)
 
     class Meta:
-        ordering = ["id"]
+        ordering = ["order", "id"]
 
     def __str__(self):
         return self.title
@@ -63,6 +68,7 @@ class Choice(models.Model):
 
 class UserProgress(models.Model):
     session_key = models.CharField(max_length=64, unique=True)
+    wallet_address = models.CharField(max_length=42, blank=True, null=True)
     xp = models.PositiveIntegerField(default=0)
     completed_experiences = models.PositiveIntegerField(default=0)
 
@@ -73,11 +79,58 @@ class UserProgress(models.Model):
         return self.session_key
 
 
+class JourneyAttempt(models.Model):
+    """One run through a course. A course is passed only if every question
+    in it is answered correctly on the first try within a single run - one
+    wrong answer ends the run as failed. This is what "100% score" and the
+    prerequisite lock on the next course are measured against.
+    """
+
+    progress = models.ForeignKey(
+        UserProgress,
+        on_delete=models.CASCADE,
+        related_name="journey_attempts",
+    )
+    journey = models.ForeignKey(
+        Journey,
+        on_delete=models.CASCADE,
+        related_name="attempts",
+    )
+    total_questions = models.PositiveIntegerField()
+    correct_count = models.PositiveIntegerField(default=0)
+    passed = models.BooleanField(default=False)
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-started_at"]
+
+    @property
+    def is_active(self):
+        return self.finished_at is None
+
+    @property
+    def score_percent(self):
+        if not self.total_questions:
+            return 0
+        return round(100 * self.correct_count / self.total_questions)
+
+    def __str__(self):
+        return f"{self.progress.session_key} -> {self.journey.slug} ({self.correct_count}/{self.total_questions})"
+
+
 class AnswerAttempt(models.Model):
     progress = models.ForeignKey(
         UserProgress,
         on_delete=models.CASCADE,
         related_name="attempts",
+    )
+    journey_attempt = models.ForeignKey(
+        JourneyAttempt,
+        on_delete=models.CASCADE,
+        related_name="answers",
+        null=True,
+        blank=True,
     )
     experience = models.ForeignKey(
         Experience,
