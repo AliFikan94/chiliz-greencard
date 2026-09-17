@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import Count, Q
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
@@ -43,6 +44,49 @@ def _locked_journey_ids(passed_ids):
         if journey_id not in passed_ids:
             blocked = True
     return locked
+
+
+class LeaderboardView(APIView):
+    """Ranks players with a connected wallet by total XP. Someone without a
+    connected wallet has nothing public to show up as, so they're excluded
+    from the ranked list entirely rather than appearing anonymously.
+    """
+
+    LIMIT = 50
+
+    def get(self, request):
+        ranked = list(
+            UserProgress.objects.exclude(wallet_address__isnull=True)
+            .exclude(wallet_address="")
+            .annotate(
+                courses_passed=Count(
+                    "journey_attempts__journey",
+                    filter=Q(journey_attempts__passed=True),
+                    distinct=True,
+                )
+            )
+            .order_by("-xp", "created_at")
+        )
+
+        def serialize(rank, progress):
+            return {
+                "rank": rank,
+                "wallet_address": progress.wallet_address,
+                "xp": progress.xp,
+                "courses_passed": progress.courses_passed,
+            }
+
+        entries = [serialize(i + 1, p) for i, p in enumerate(ranked[: self.LIMIT])]
+
+        me = None
+        session_key = request.query_params.get("session_key")
+        if session_key:
+            for i, p in enumerate(ranked):
+                if p.session_key == session_key:
+                    me = serialize(i + 1, p)
+                    break
+
+        return Response({"entries": entries, "me": me})
 
 
 class JourneyListView(APIView):

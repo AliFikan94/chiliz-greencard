@@ -3,11 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 
+import { shortenAddress } from "@/lib/format";
 import { bindWallet } from "@/lib/rewardApi";
-
-function shortenAddress(address: string) {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-}
 
 export function ConnectWalletButton({ sessionKey }: { sessionKey: string | null }) {
   const { address, isConnected } = useAccount();

@@ -43,6 +43,8 @@ export function requestExperienceVoucher(sessionKey: string, experienceId: numbe
 }
 
 export type GreencardStatus = {
+  xp: number;
+  wallet_address: string | null;
   courses_passed: number;
   total_courses: number;
   eligible: boolean;

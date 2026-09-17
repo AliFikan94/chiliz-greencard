@@ -101,6 +101,18 @@ export default function Home() {
             <span className="text-xs font-semibold tracking-[0.2em]">CHILIZ ACADEMY</span>
           </div>
           <div className="flex items-center gap-3">
+            <Link
+              href="/leaderboard"
+              className="hidden text-xs font-semibold uppercase tracking-[0.15em] text-muted transition hover:text-foreground sm:inline"
+            >
+              Leaderboard
+            </Link>
+            <Link
+              href="/profile"
+              className="hidden text-xs font-semibold uppercase tracking-[0.15em] text-muted transition hover:text-foreground sm:inline"
+            >
+              Profile
+            </Link>
             <StreakBadge />
             <ThemeToggle />
             <ConnectWalletButton sessionKey={sessionKey} />

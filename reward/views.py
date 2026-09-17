@@ -126,6 +126,8 @@ class GreencardStatusView(APIView):
 
         return Response(
             {
+                "xp": progress.xp if progress else 0,
+                "wallet_address": progress.wallet_address if progress else None,
                 "courses_passed": passed_count,
                 "total_courses": len(core_journeys),
                 "eligible": len(core_journeys) > 0 and passed_count == len(core_journeys),

@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     JourneyListView,
+    LeaderboardView,
     StartJourneyView,
     SubmitAnswerView,
 )
@@ -11,6 +12,12 @@ urlpatterns = [
         "",
         JourneyListView.as_view(),
         name="journey-list",
+    ),
+
+    path(
+        "leaderboard/",
+        LeaderboardView.as_view(),
+        name="leaderboard",
     ),
 
     path(

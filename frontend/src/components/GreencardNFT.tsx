@@ -2,11 +2,9 @@
 
 import { useRef, useState } from "react";
 
-import { GraduationCapIcon } from "./GraduationCapIcon";
+import { shortenAddress } from "@/lib/format";
 
-function shortenAddress(address: string) {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-}
+import { GraduationCapIcon } from "./GraduationCapIcon";
 
 export function GreencardNFT({
   walletAddress,

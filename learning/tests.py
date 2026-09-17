@@ -1,6 +1,6 @@
 from rest_framework.test import APITestCase
 
-from .models import Choice, Experience, Journey
+from .models import Choice, Experience, Journey, JourneyAttempt, UserProgress
 
 
 class CoursePrerequisiteTests(APITestCase):
@@ -99,3 +99,48 @@ class CoursePrerequisiteTests(APITestCase):
     def test_answering_without_starting_is_rejected(self):
         response = self._answer(self.c1_q1, self._correct_choice(self.c1_q1))
         self.assertEqual(response.status_code, 400)
+
+
+class LeaderboardTests(APITestCase):
+    def setUp(self):
+        self.journey = Journey.objects.create(
+            title="Course 1", slug="course-1", order=1, is_published=True
+        )
+
+        self.walletless = UserProgress.objects.create(session_key="no-wallet", xp=999)
+
+        self.low = UserProgress.objects.create(
+            session_key="low", wallet_address="0x1111111111111111111111111111111111111111", xp=10
+        )
+        self.high = UserProgress.objects.create(
+            session_key="high", wallet_address="0x2222222222222222222222222222222222222222", xp=50
+        )
+        JourneyAttempt.objects.create(
+            progress=self.high,
+            journey=self.journey,
+            total_questions=2,
+            correct_count=2,
+            passed=True,
+        )
+
+    def test_only_wallet_holders_are_ranked_highest_xp_first(self):
+        response = self.client.get("/api/learning/leaderboard/")
+        self.assertEqual(response.status_code, 200)
+        wallets = [entry["wallet_address"] for entry in response.data["entries"]]
+        self.assertEqual(wallets, [self.high.wallet_address, self.low.wallet_address])
+        self.assertEqual(response.data["entries"][0]["rank"], 1)
+        self.assertEqual(response.data["entries"][0]["courses_passed"], 1)
+        self.assertEqual(response.data["entries"][1]["courses_passed"], 0)
+
+    def test_me_reflects_requesting_sessions_rank(self):
+        response = self.client.get(
+            "/api/learning/leaderboard/", {"session_key": "low"}
+        )
+        self.assertEqual(response.data["me"]["rank"], 2)
+        self.assertEqual(response.data["me"]["xp"], 10)
+
+    def test_me_is_none_without_a_wallet(self):
+        response = self.client.get(
+            "/api/learning/leaderboard/", {"session_key": "no-wallet"}
+        )
+        self.assertIsNone(response.data["me"])

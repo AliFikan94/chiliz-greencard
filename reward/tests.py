@@ -158,6 +158,8 @@ class RewardVoucherFlowTests(APITestCase):
 
         status_before = self.client.get(f"/api/reward/greencard/status/{self.session_key}/")
         self.assertEqual(status_before.data, {
+            "xp": 0,
+            "wallet_address": WALLET_ADDRESS,
             "courses_passed": 0,
             "total_courses": 1,
             "eligible": False,

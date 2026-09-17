@@ -3,6 +3,18 @@ import { AnswerResult, CourseSummary, StartRunResult } from "./types";
 export const LEARNING_API =
   process.env.NEXT_PUBLIC_LEARNING_API_BASE || "http://127.0.0.1:8000/api/learning";
 
+export type LeaderboardEntry = {
+  rank: number;
+  wallet_address: string;
+  xp: number;
+  courses_passed: number;
+};
+
+export type LeaderboardResponse = {
+  entries: LeaderboardEntry[];
+  me: LeaderboardEntry | null;
+};
+
 async function postJson<T>(path: string, body: object): Promise<T> {
   const response = await fetch(`${LEARNING_API}${path}`, {
     method: "POST",
@@ -38,4 +50,11 @@ export function submitAnswer(
     choice_id: choiceId,
     session_key: sessionKey,
   });
+}
+
+export async function fetchLeaderboard(sessionKey: string | null): Promise<LeaderboardResponse> {
+  const query = sessionKey ? `?session_key=${encodeURIComponent(sessionKey)}` : "";
+  const response = await fetch(`${LEARNING_API}/leaderboard/${query}`, { cache: "no-store" });
+  if (!response.ok) throw new Error("Failed to load leaderboard");
+  return response.json();
 }
